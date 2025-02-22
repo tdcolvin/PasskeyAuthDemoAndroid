@@ -95,8 +95,10 @@ fun SignUpWithPasskey(
         localActivity ?: return
 
         signUpScope.launch {
+            val registerRequestJson = getPasskeyRegisterRequestJson(username)
+
             val createPublicKeyCredentialRequest = CreatePublicKeyCredentialRequest(
-                requestJson = getPasskeyRegisterRequestJson(username),
+                requestJson = registerRequestJson,
                 preferImmediatelyAvailableCredentials = false
             )
             val createCredentialResponse = credentialManager.createCredential(
@@ -107,6 +109,7 @@ fun SignUpWithPasskey(
             if (createCredentialResponse !is CreatePublicKeyCredentialResponse) {
                 return@launch
             }
+
             sendRegistrationResponse(createCredentialResponse.registrationResponseJson)
         }
     }
@@ -137,8 +140,10 @@ fun SignInWithPasskey(
                 val getPublicKeyCredentialOption = GetPublicKeyCredentialOption(requestJson = getPasskeyRegisterRequestJson("tom"))
                 val signInRequest = GetCredentialRequest(listOf(getPublicKeyCredentialOption))
                 
-                val result =
-                    credentialManager.getCredential(context = localActivity, request = signInRequest)
+                val result = credentialManager.getCredential(
+                    context = localActivity,
+                    request = signInRequest
+                )
 
                 val credential = result.credential
 
