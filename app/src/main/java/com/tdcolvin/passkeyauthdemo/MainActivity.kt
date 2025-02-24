@@ -67,14 +67,16 @@ fun PasskeyDemoScreen(
     ) {
         Text("Username: $username")
         SignUpWithPasskey(
-            credentialManager = credentialManager,
             username = username,
+            credentialManager = credentialManager,
             getPasskeyRegisterRequestJson = viewModel::getPasskeyRegisterRequestJson,
             sendRegistrationResponse = viewModel::sendRegistrationResponse
         )
         SignInWithPasskey(
+            username = username,
             credentialManager = credentialManager,
-            getPasskeyRegisterRequestJson = viewModel::getPasskeyRegisterRequestJson
+            getPasskeyAuthenticationRequestJson = viewModel::getPasskeyAuthenticationRequestJson,
+            sendAuthenticationResponse = viewModel::sendAuthenticationResponse
         )
     }
 }
@@ -125,8 +127,10 @@ fun SignUpWithPasskey(
 @Composable
 fun SignInWithPasskey(
     modifier: Modifier = Modifier,
+    username: String,
     credentialManager: CredentialManager,
-    getPasskeyRegisterRequestJson: suspend (String) -> String,
+    getPasskeyAuthenticationRequestJson: suspend (String) -> String,
+    sendAuthenticationResponse: suspend (String) -> String
 ) {
     val localActivity = LocalActivity.current
     val signInScope = rememberCoroutineScope()
@@ -137,7 +141,12 @@ fun SignInWithPasskey(
             signInScope.launch {
                 localActivity ?: return@launch
 
-                val getPublicKeyCredentialOption = GetPublicKeyCredentialOption(requestJson = getPasskeyRegisterRequestJson("tom"))
+                val authenticationRequestJson = getPasskeyAuthenticationRequestJson(username)
+                Log.v("passkey", "Authentication request JSON: $authenticationRequestJson")
+
+                val getPublicKeyCredentialOption = GetPublicKeyCredentialOption(
+                    requestJson = authenticationRequestJson
+                )
                 val signInRequest = GetCredentialRequest(listOf(getPublicKeyCredentialOption))
                 
                 val result = credentialManager.getCredential(
@@ -152,9 +161,8 @@ fun SignInWithPasskey(
                 }
 
                 val responseJson = credential.authenticationResponseJson
-                    // Share responseJson i.e. a GetCredentialResponse on your server to
-                    // validate and  authenticate
-                Log.v("passkey", responseJson)
+
+                sendAuthenticationResponse(responseJson)
             }
         }
     ) {
@@ -200,5 +208,35 @@ class PasskeyDemoViewModel: ViewModel() {
             throw Exception("Registration failed: ${response.body?.string()}")
         }
         response.body?.string() ?: "{}"
+    }
+
+    suspend fun getPasskeyAuthenticationRequestJson(username: String): String = withContext(Dispatchers.IO) {
+        val url = HttpUrl.Builder()
+            .scheme("https")
+            .host("auth.tomcolvin.co.uk")
+            .addPathSegment("generate-authentication-options")
+            .addQueryParameter("username", username)
+            .build()
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        val response = okHttpClient.newCall(request).execute()
+        response.body?.string() ?: throw Exception("No response body")
+    }
+
+    suspend fun sendAuthenticationResponse(authenticationResponseJson: String): String = withContext(Dispatchers.IO) {
+        val url = HttpUrl.Builder()
+            .scheme("https")
+            .host("auth.tomcolvin.co.uk")
+            .addPathSegment("verify-authentication")
+            .build()
+        val request = Request.Builder()
+            .url(url)
+            .post(authenticationResponseJson.toRequestBody("application/json".toMediaType()))
+            .build()
+
+        val response = okHttpClient.newCall(request).execute()
+        response.body?.string() ?: throw Exception("No response body")
     }
 }
