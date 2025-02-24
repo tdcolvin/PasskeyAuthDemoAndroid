@@ -107,7 +107,7 @@ fun SignUpWithPasskey(
             )
 
             if (createCredentialResponse !is CreatePublicKeyCredentialResponse) {
-                return@launch
+                throw Exception("Incorrect response type")
             }
 
             sendRegistrationResponse(createCredentialResponse.registrationResponseJson)
@@ -196,6 +196,9 @@ class PasskeyDemoViewModel: ViewModel() {
             .build()
 
         val response = okHttpClient.newCall(request).execute()
-        response.body?.string() ?: throw Exception("No response body")
+        if (response.code != 200) {
+            throw Exception("Registration failed: ${response.body?.string()}")
+        }
+        response.body?.string() ?: "{}"
     }
 }
