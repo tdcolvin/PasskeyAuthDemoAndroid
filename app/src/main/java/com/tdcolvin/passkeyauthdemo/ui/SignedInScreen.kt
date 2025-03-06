@@ -1,10 +1,19 @@
 package com.tdcolvin.passkeyauthdemo.ui
 
+import android.content.res.Configuration
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.tdcolvin.passkeyauthdemo.ui.theme.PasskeyAuthDemoAndroidTheme
 
 @Composable
 fun SignedInScreen(
@@ -12,14 +21,42 @@ fun SignedInScreen(
     username: String,
     onSignOut: () -> Unit
 ) {
-    Column(modifier = modifier) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(30.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Text(
-            modifier = Modifier.weight(1f),
-            text = "Successfully signed in as $username"
+            modifier = Modifier,
+            textAlign = TextAlign.Center,
+            text = "Successfully signed in as $username",
+            style = MaterialTheme.typography.headlineMedium
         )
 
-        Button(onClick = onSignOut) {
+        Button(
+            onClick = onSignOut
+        ) {
             Text("Sign out")
+        }
+    }
+}
+
+@Preview(showBackground = false)
+@Composable
+fun SignedInScreenPreview_Light() {
+    PasskeyAuthDemoAndroidTheme {
+        Surface {
+            SignedInScreen(username = "John Doe", onSignOut = {})
+        }
+    }
+}
+
+@Preview(showBackground = false, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+fun SignedInScreenPreview_Dark() {
+    PasskeyAuthDemoAndroidTheme {
+        Surface {
+            SignedInScreen(username = "John Doe", onSignOut = {})
         }
     }
 }
