@@ -41,6 +41,8 @@ fun SignedOutScreen(
     onSignedIn: () -> Unit
 ) {
     var error by remember { mutableStateOf<Exception?>(null) }
+    var isWorking by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -62,23 +64,43 @@ fun SignedOutScreen(
 
         SignUpWithPasskey(
             modifier = Modifier.padding(top = 40.dp).fillMaxWidth(),
+            enabled = !isWorking,
             username = username,
             credentialManager = credentialManager,
             getPasskeyRegisterRequestJson = getPasskeyRegisterRequestJson,
             sendRegistrationResponse = sendRegistrationResponse,
-            onBeginSignUp = { error = null },
-            onSignedUp = onSignedIn,
-            onError = { error = it }
+            onBeginSignUp = {
+                error = null
+                isWorking = true
+            },
+            onSignedUp = {
+                onSignedIn()
+                isWorking = false
+            },
+            onError = {
+                error = it
+                isWorking = false
+            }
         )
         SignInWithPasskey(
             modifier = Modifier.fillMaxWidth(),
+            enabled = !isWorking,
             username = username,
             credentialManager = credentialManager,
             getPasskeyAuthenticationRequestJson = getPasskeyAuthenticationRequestJson,
             sendAuthenticationResponse = sendAuthenticationResponse,
-            onBeginSignIn = { error = null },
-            onSignedIn = onSignedIn,
-            onError = { error = it }
+            onBeginSignIn = {
+                error = null
+                isWorking = true
+            },
+            onSignedIn = {
+                onSignedIn()
+                isWorking = false
+            },
+            onError = {
+                error = it
+                isWorking = false
+            }
         )
 
         error?.message?.let { errorMessage ->
@@ -90,6 +112,7 @@ fun SignedOutScreen(
 @Composable
 fun SignUpWithPasskey(
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     username: String,
     credentialManager: CredentialManager?,
     getPasskeyRegisterRequestJson: suspend (String) -> String,
@@ -101,12 +124,15 @@ fun SignUpWithPasskey(
     val localActivity = LocalActivity.current
     val signUpScope = rememberCoroutineScope()
 
+    var isRegistering by remember { mutableStateOf(false) }
+
     fun doSignUp() {
         localActivity ?: return
         credentialManager ?: return
 
         signUpScope.launch {
             onBeginSignUp()
+            isRegistering = true
 
             try {
                 val registerRequestJson = getPasskeyRegisterRequestJson(username)
@@ -131,20 +157,24 @@ fun SignUpWithPasskey(
             catch (e: Exception) {
                 onError(e)
             }
+            finally {
+                isRegistering = false
+            }
         }
     }
 
     Button(
         modifier = modifier,
-        onClick = { doSignUp() }
+        onClick = { if (enabled) doSignUp() }
     ) {
-        Text("Sign up (=register) with Passkey")
+        Text(if (isRegistering) "Registering..." else "Sign up (=register) with Passkey")
     }
 }
 
 @Composable
 fun SignInWithPasskey(
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     username: String,
     credentialManager: CredentialManager?,
     getPasskeyAuthenticationRequestJson: suspend (String) -> String,
@@ -156,48 +186,57 @@ fun SignInWithPasskey(
     val localActivity = LocalActivity.current
     val signInScope = rememberCoroutineScope()
 
-    Button(
-        modifier = modifier,
-        onClick = {
-            onBeginSignIn()
+    var isAuthenticating by remember { mutableStateOf(false) }
 
-            signInScope.launch {
-                localActivity ?: return@launch
-                credentialManager ?: return@launch
+    fun doSignIn() {
+        localActivity ?: return
+        credentialManager ?: return
 
-                try {
-                    val authenticationRequestJson = getPasskeyAuthenticationRequestJson(username)
-                    Log.v("passkey", "Authentication request JSON: $authenticationRequestJson")
+        onBeginSignIn()
+        isAuthenticating = true
 
-                    val getPublicKeyCredentialOption = GetPublicKeyCredentialOption(
-                        requestJson = authenticationRequestJson
-                    )
-                    val signInRequest = GetCredentialRequest(listOf(getPublicKeyCredentialOption))
+        signInScope.launch {
+            try {
+                val authenticationRequestJson = getPasskeyAuthenticationRequestJson(username)
+                Log.v("passkey", "Authentication request JSON: $authenticationRequestJson")
 
-                    val result = credentialManager.getCredential(
-                        context = localActivity,
-                        request = signInRequest
-                    )
+                val getPublicKeyCredentialOption = GetPublicKeyCredentialOption(
+                    requestJson = authenticationRequestJson
+                )
+                val signInRequest = GetCredentialRequest(listOf(getPublicKeyCredentialOption))
 
-                    val credential = result.credential
+                val result = credentialManager.getCredential(
+                    context = localActivity,
+                    request = signInRequest
+                )
 
-                    if (credential !is PublicKeyCredential) {
-                        throw Exception("Incorrect credential type")
-                    }
+                val credential = result.credential
 
-                    val responseJson = credential.authenticationResponseJson
-
-                    sendAuthenticationResponse(responseJson)
-
-                    onSignedIn()
+                if (credential !is PublicKeyCredential) {
+                    throw Exception("Incorrect credential type")
                 }
-                catch (e: Exception) {
-                    onError(e)
-                }
+
+                val responseJson = credential.authenticationResponseJson
+
+                sendAuthenticationResponse(responseJson)
+
+                onSignedIn()
+            }
+            catch (e: Exception) {
+                onError(e)
+            }
+            finally {
+                isAuthenticating = false
             }
         }
+    }
+
+    Button(
+        modifier = modifier,
+        enabled = enabled,
+        onClick = { if (enabled) doSignIn() }
     ) {
-        Text("Sign in (=authenticate) with Passkey")
+        Text(if (isAuthenticating) "Authenticating..." else "Sign in (=authenticate) with Passkey")
     }
 }
 
