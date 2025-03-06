@@ -3,6 +3,8 @@ package com.tdcolvin.passkeyauthdemo.ui
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -27,13 +29,18 @@ fun SignedInScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            modifier = Modifier,
             textAlign = TextAlign.Center,
             text = "Successfully signed in as $username",
             style = MaterialTheme.typography.headlineMedium
         )
+        Text(
+            modifier = Modifier.padding(top = 20.dp),
+            textAlign = TextAlign.Center,
+            text = "Registered and authenticated to auth.tomcolvin.co.uk",
+        )
 
         Button(
+            modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
             onClick = onSignOut
         ) {
             Text("Sign out")
