@@ -57,8 +57,7 @@ dependencies {
 
     implementation(libs.androidx.credentials)
 
-    // optional - needed for credentials support from play services, for devices running
-    // Android 13 and below.
+    // Needed for credentials support from play services, for devices running Android 13 and below.
     implementation(libs.androidx.credentials.play.services.auth)
 
     testImplementation(libs.junit)
