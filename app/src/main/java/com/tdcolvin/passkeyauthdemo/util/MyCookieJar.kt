@@ -1,4 +1,4 @@
-package com.tdcolvin.passkeyauthdemo
+package com.tdcolvin.passkeyauthdemo.util
 
 import okhttp3.Cookie
 import okhttp3.CookieJar
