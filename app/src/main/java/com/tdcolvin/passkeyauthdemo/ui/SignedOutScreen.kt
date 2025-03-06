@@ -233,7 +233,6 @@ fun SignInWithPasskey(
 
     Button(
         modifier = modifier,
-        enabled = enabled,
         onClick = { if (enabled) doSignIn() }
     ) {
         Text(if (isAuthenticating) "Authenticating..." else "Sign in (=authenticate) with Passkey")
