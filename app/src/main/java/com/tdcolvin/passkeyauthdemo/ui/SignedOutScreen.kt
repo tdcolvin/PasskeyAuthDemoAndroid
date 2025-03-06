@@ -57,6 +57,7 @@ fun SignedOutScreen(
             credentialManager = credentialManager,
             getPasskeyRegisterRequestJson = getPasskeyRegisterRequestJson,
             sendRegistrationResponse = sendRegistrationResponse,
+            onBeginSignUp = { error = null },
             onSignedUp = onSignedIn,
             onError = { error = it }
         )
@@ -66,9 +67,14 @@ fun SignedOutScreen(
             credentialManager = credentialManager,
             getPasskeyAuthenticationRequestJson = getPasskeyAuthenticationRequestJson,
             sendAuthenticationResponse = sendAuthenticationResponse,
+            onBeginSignIn = { error = null },
             onSignedIn = onSignedIn,
             onError = { error = it }
         )
+
+        error?.message?.let { errorMessage ->
+            Text(modifier = Modifier.padding(top = 40.dp), text = errorMessage)
+        }
     }
 }
 
@@ -79,6 +85,7 @@ fun SignUpWithPasskey(
     credentialManager: CredentialManager?,
     getPasskeyRegisterRequestJson: suspend (String) -> String,
     sendRegistrationResponse: suspend (String) -> String,
+    onBeginSignUp: () -> Unit,
     onSignedUp: () -> Unit,
     onError: (Exception) -> Unit
 ) {
@@ -90,6 +97,8 @@ fun SignUpWithPasskey(
         credentialManager ?: return
 
         signUpScope.launch {
+            onBeginSignUp()
+
             try {
                 val registerRequestJson = getPasskeyRegisterRequestJson(username)
 
@@ -131,6 +140,7 @@ fun SignInWithPasskey(
     credentialManager: CredentialManager?,
     getPasskeyAuthenticationRequestJson: suspend (String) -> String,
     sendAuthenticationResponse: suspend (String) -> String,
+    onBeginSignIn: () -> Unit,
     onSignedIn: () -> Unit,
     onError: (Exception) -> Unit
 ) {
@@ -140,6 +150,8 @@ fun SignInWithPasskey(
     Button(
         modifier = modifier,
         onClick = {
+            onBeginSignIn()
+
             signInScope.launch {
                 localActivity ?: return@launch
                 credentialManager ?: return@launch
