@@ -1,4 +1,4 @@
-# Passkey demo app
+# Passkey demo app on Android
 
 This app demonstrates a full end-to-end passkey implementation in Android, using Jetpack Credential Manager and Compose.
 
