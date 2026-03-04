@@ -48,7 +48,7 @@ fun SignedOutScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Passkey demo app",
+            text = "Passkey demo",
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.headlineMedium
         )
