@@ -30,7 +30,7 @@ import com.tdcolvin.passkeyauthdemo.ui.theme.PasskeyAuthDemoAndroidTheme
 import kotlinx.coroutines.launch
 
 @Composable
-fun SignedOutScreen(
+fun oldSignedOutScreen(
     modifier: Modifier = Modifier,
     username: String,
     credentialManager: CredentialManager?,
@@ -244,7 +244,7 @@ fun SignInWithPasskey(
 fun SignedOutScreen_Preview() {
     PasskeyAuthDemoAndroidTheme {
         Surface {
-            SignedOutScreen(
+            oldSignedOutScreen(
                 username = "test",
                 credentialManager = null,
                 sendRegistrationResponse = { "" },
