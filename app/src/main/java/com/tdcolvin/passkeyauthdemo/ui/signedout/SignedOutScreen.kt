@@ -52,7 +52,6 @@ fun SignedOutScreenContent(
         Spacer(Modifier.height(20.dp))
 
         Button(
-            modifier = modifier,
             onClick = navigateToSignUp
         ) {
             Text("Sign up (=register) with Passkey")

@@ -45,7 +45,7 @@ fun PasskeyDemoNav(
         entryProvider = entryProvider {
             entry<SignedOutNavState> {
                 SignedOutScreen(
-                    modifier = modifier.fillMaxSize().padding(20.dp),
+                    modifier = modifier.padding(20.dp),
                     username = username,
                     navigateToSignUp = { backStack.add(SignUpNavState(username)) }
                 )
