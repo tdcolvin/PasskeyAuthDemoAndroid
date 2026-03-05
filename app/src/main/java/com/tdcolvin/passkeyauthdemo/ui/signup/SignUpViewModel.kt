@@ -1,5 +1,9 @@
 package com.tdcolvin.passkeyauthdemo.ui.signup
 
+import android.app.Activity
+import androidx.credentials.CreatePublicKeyCredentialRequest
+import androidx.credentials.CreatePublicKeyCredentialResponse
+import androidx.credentials.CredentialManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,12 +23,15 @@ import javax.inject.Inject
 data class SignUpUiState(
     val getRegistrationOptionsJsonResult: Result<String>? = null,
     val isGettingRegistrationOptionsJson: Boolean = false,
-    val getPasskeyJsonResult: Result<String>? = null
+
+    val createPasskeyResult: Result<String>? = null,
+    val isCreatingPasskey: Boolean = false
 )
 
 @HiltViewModel
 class SignUpViewModel @Inject constructor(
-    private val okHttpClient: OkHttpClient
+    private val okHttpClient: OkHttpClient,
+    private val credentialManager: CredentialManager
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SignUpUiState())
     val uiState get() = _uiState.asStateFlow()
@@ -51,6 +58,37 @@ class SignUpViewModel @Inject constructor(
             _uiState.update { it.copy(
                 getRegistrationOptionsJsonResult = result,
                 isGettingRegistrationOptionsJson = false
+            ) }
+        }
+    }
+
+    fun createPasskeyFromRegistrationOptions(activity: Activity) {
+        val registerRequestJson = _uiState.value.getRegistrationOptionsJsonResult?.getOrNull()
+            ?: throw Exception("No registration options available")
+
+        _uiState.update { it.copy(isCreatingPasskey = true) }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val registrationResponse = runCatching {
+                val createPublicKeyCredentialRequest = CreatePublicKeyCredentialRequest(
+                    requestJson = registerRequestJson,
+                    preferImmediatelyAvailableCredentials = false
+                )
+                val createCredentialResponse = credentialManager.createCredential(
+                    context = activity,
+                    request = createPublicKeyCredentialRequest
+                )
+
+                if (createCredentialResponse !is CreatePublicKeyCredentialResponse) {
+                    throw Exception("Incorrect response type")
+                }
+
+                createCredentialResponse.registrationResponseJson
+            }
+
+            _uiState.update { it.copy(
+                createPasskeyResult = registrationResponse,
+                isCreatingPasskey = false
             ) }
         }
     }

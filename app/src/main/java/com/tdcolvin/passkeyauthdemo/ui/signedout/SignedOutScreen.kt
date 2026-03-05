@@ -17,22 +17,19 @@ import androidx.compose.ui.unit.dp
 fun SignedOutScreen(
     modifier: Modifier = Modifier,
     username: String,
-    navigateToSignUp: () -> Unit,
-    navigateToSignIn: () -> Unit
+    navigateToSignUp: () -> Unit
 ) {
     SignedOutScreenContent(
         modifier = modifier,
         username = username,
-        navigateToSignUp = navigateToSignUp,
-        navigateToSignIn = navigateToSignIn
+        navigateToSignUp = navigateToSignUp
     )
 }
 @Composable
 fun SignedOutScreenContent(
     modifier: Modifier = Modifier,
     username: String,
-    navigateToSignUp: () -> Unit,
-    navigateToSignIn: () -> Unit
+    navigateToSignUp: () -> Unit
 ) {
     Column(
         modifier = modifier,

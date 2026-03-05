@@ -1,5 +1,6 @@
 package com.tdcolvin.passkeyauthdemo.ui.signup
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -30,14 +31,17 @@ fun SignUpScreen(
     username: String,
     viewModel: SignUpViewModel = viewModel()
 ) {
+    val localActivity = LocalActivity.current
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
     SignUpFlow(
         modifier = modifier,
         getRegistrationOptionsJsonResult = state.getRegistrationOptionsJsonResult,
         isGettingRegistrationOptionsJson = state.isGettingRegistrationOptionsJson,
-//        passkeyJson = state.passkeyJson,
+        createPasskeyResult = state.createPasskeyResult,
+        isCreatingPasskey = state.isCreatingPasskey,
         getRegistrationOptionsJson = { viewModel.getPasskeyRegistrationOptionsJson(username) },
-//        createPasskey = { },
+        createPasskey = { viewModel.createPasskeyFromRegistrationOptions(localActivity ?: throw Exception("No activity")) },
         sendPasskeyDetailsToServer = { }
     )
 }
@@ -46,9 +50,10 @@ fun SignUpFlow(
     modifier: Modifier = Modifier,
     getRegistrationOptionsJsonResult: Result<String>?,
     isGettingRegistrationOptionsJson: Boolean,
-//    passkeyJson: String?,
+    createPasskeyResult: Result<String>?,
+    isCreatingPasskey: Boolean,
     getRegistrationOptionsJson: () -> Unit,
-//    createPasskey: () -> Unit,
+    createPasskey: () -> Unit,
     sendPasskeyDetailsToServer: () -> Unit
 ) {
     Column(modifier = modifier) {
@@ -58,22 +63,23 @@ fun SignUpFlow(
             getRegistrationOptionsJson = getRegistrationOptionsJson
         )
 
-//        if (getRegistrationOptionsJsonResult?.isSuccess == true) {
-//            Spacer(Modifier.height(20.dp))
-//
-//            SignUpCreatePasskeyStage(
-//                createPasskeyDetailsJsonResult = passkeyJson,
-//                createPasskey = createPasskey
-//            )
-//        }
+        if (getRegistrationOptionsJsonResult?.isSuccess == true) {
+            Spacer(Modifier.height(20.dp))
 
-//        if (passkeyJson != null) {
-//            Spacer(Modifier.height(20.dp))
-//
-//            SignUpSendPasskeyDetailsToServerStage(
-//                sendPasskeyDetailsToServer = sendPasskeyDetailsToServer
-//            )
-//        }
+            SignUpCreatePasskeyStage(
+                createPasskeyResult = createPasskeyResult,
+                isCreatingPasskey = isCreatingPasskey,
+                createPasskey = createPasskey
+            )
+        }
+
+        if (createPasskeyResult?.isSuccess == true) {
+            Spacer(Modifier.height(20.dp))
+
+            SignUpSendPasskeyDetailsToServerStage(
+                sendPasskeyDetailsToServer = sendPasskeyDetailsToServer
+            )
+        }
     }
 }
 
@@ -118,30 +124,47 @@ fun SignUpGetRegisterRequestStage(
     }
 }
 
-//@Composable
-//fun SignUpCreatePasskeyStage(
-//    createPasskeyDetailsJsonResult: Result<String>?,
-//    creatingPasskeyDetailsJson: Boolean,
-//    createPasskey: () -> Unit
-//) {
-//    Button(onClick = createPasskey) {
-//        Text("Create Passkey From Registration Options")
-//    }
-//
-//    Spacer(Modifier.height(10.dp))
-//
-//    if (passkeyDetailsJson != null) {
-//        Text("Passkey details to send to server:")
-//        TextField(
-//            modifier = Modifier.fillMaxWidth(),
-//            minLines = 5,
-//            textStyle = TextStyle(fontFamily = FontFamily.Monospace),
-//            value = passkeyJson,
-//            readOnly = true,
-//            onValueChange = { }
-//        )
-//    }
-//}
+@Composable
+fun SignUpCreatePasskeyStage(
+    createPasskeyResult: Result<String>?,
+    isCreatingPasskey: Boolean,
+    createPasskey: () -> Unit
+) {
+    Column {
+        Row(
+            modifier = Modifier.height(IntrinsicSize.Max),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = createPasskey,
+                enabled = !isCreatingPasskey
+            ) {
+                Text("Create Passkey From Registration Options")
+            }
+
+            if (isCreatingPasskey) {
+                CircularProgressIndicator(
+                    modifier = Modifier.fillMaxHeight()
+                )
+            }
+        }
+    }
+
+    Spacer(Modifier.height(10.dp))
+
+    createPasskeyResult?.getOrNull()?.let { passkeyDetailsJson ->
+        Text("Passkey details to send to server:")
+        TextField(
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 5,
+            textStyle = TextStyle(fontFamily = FontFamily.Monospace),
+            value = passkeyDetailsJson,
+            readOnly = true,
+            onValueChange = { }
+        )
+    }
+}
 
 @Composable
 fun SignUpSendPasskeyDetailsToServerStage(
@@ -159,9 +182,10 @@ fun SignUpFlow_Preview() {
         SignUpFlow(
             getRegistrationOptionsJsonResult = Result.success("Booo\nBoo\nBoo\nBoo"),
             isGettingRegistrationOptionsJson = false,
-//            passkeyJson = "Moo\nBoo\nRoo",
+            createPasskeyResult = Result.success("{ }"),
+            isCreatingPasskey = false,
             getRegistrationOptionsJson = { },
-//            createPasskey = { },
+            createPasskey = { },
             sendPasskeyDetailsToServer = { }
         )
     }
