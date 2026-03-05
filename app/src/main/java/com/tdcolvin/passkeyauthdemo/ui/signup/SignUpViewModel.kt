@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -25,7 +24,10 @@ data class SignUpUiState(
     val isGettingRegistrationOptionsJson: Boolean = false,
 
     val createPasskeyResult: Result<String>? = null,
-    val isCreatingPasskey: Boolean = false
+    val isCreatingPasskey: Boolean = false,
+
+    val sendRegistrationResponseToServerResult: Result<Unit>? = null,
+    val isSendingRegistrationResponseToServer: Boolean = false
 )
 
 @HiltViewModel
@@ -63,13 +65,13 @@ class SignUpViewModel @Inject constructor(
     }
 
     fun createPasskeyFromRegistrationOptions(activity: Activity) {
-        val registerRequestJson = _uiState.value.getRegistrationOptionsJsonResult?.getOrNull()
-            ?: throw Exception("No registration options available")
-
         _uiState.update { it.copy(isCreatingPasskey = true) }
 
         viewModelScope.launch(Dispatchers.IO) {
             val registrationResponse = runCatching {
+                val registerRequestJson = _uiState.value.getRegistrationOptionsJsonResult?.getOrNull()
+                    ?: throw Exception("No registration options available")
+
                 val createPublicKeyCredentialRequest = CreatePublicKeyCredentialRequest(
                     requestJson = registerRequestJson,
                     preferImmediatelyAvailableCredentials = false
@@ -93,23 +95,34 @@ class SignUpViewModel @Inject constructor(
         }
     }
 
-    suspend fun sendRegistrationResponse(
-        registrationResponseJson: String,
-    ) = withContext(Dispatchers.IO) {
-        val url = HttpUrl.Builder()
-            .scheme("https")
-            .host("auth.tomcolvin.co.uk")
-            .addPathSegment("verify-registration")
-            .build()
-        val request = Request.Builder()
-            .url(url)
-            .post(registrationResponseJson.toRequestBody("application/json".toMediaType()))
-            .build()
+    fun sendRegistrationResponseToServer() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.update { it.copy(isSendingRegistrationResponseToServer = true) }
 
-        val response = okHttpClient.newCall(request).execute()
-        if (response.code != 200) {
-            throw Exception("Registration failed: ${response.body?.string()}")
+            val result = runCatching {
+                val registrationResponseJson = _uiState.value.createPasskeyResult?.getOrNull()
+                    ?: throw Exception("No registration response available")
+
+                val url = HttpUrl.Builder()
+                    .scheme("https")
+                    .host("auth.tomcolvin.co.uk")
+                    .addPathSegment("verify-registration")
+                    .build()
+                val request = Request.Builder()
+                    .url(url)
+                    .post(registrationResponseJson.toRequestBody("application/json".toMediaType()))
+                    .build()
+
+                val response = okHttpClient.newCall(request).execute()
+                if (response.code != 200) {
+                    throw Exception("Registration failed: ${response.body.string()}")
+                }
+            }
+
+            _uiState.update { it.copy(
+                sendRegistrationResponseToServerResult = result,
+                isSendingRegistrationResponseToServer = false
+            ) }
         }
-        response.body.string()
     }
 }

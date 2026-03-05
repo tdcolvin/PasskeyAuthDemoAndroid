@@ -9,11 +9,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,27 +40,43 @@ fun SignUpScreen(
 
     SignUpFlow(
         modifier = modifier,
+        username = username,
         getRegistrationOptionsJsonResult = state.getRegistrationOptionsJsonResult,
         isGettingRegistrationOptionsJson = state.isGettingRegistrationOptionsJson,
         createPasskeyResult = state.createPasskeyResult,
         isCreatingPasskey = state.isCreatingPasskey,
+        sendRegistrationResponseToServerResult = state.sendRegistrationResponseToServerResult,
+        isSendingRegistrationResponseToServer = state.isSendingRegistrationResponseToServer,
         getRegistrationOptionsJson = { viewModel.getPasskeyRegistrationOptionsJson(username) },
         createPasskey = { viewModel.createPasskeyFromRegistrationOptions(localActivity ?: throw Exception("No activity")) },
-        sendPasskeyDetailsToServer = { }
+        sendRegistrationResponseToServer = viewModel::sendRegistrationResponseToServer
     )
 }
 @Composable
 fun SignUpFlow(
     modifier: Modifier = Modifier,
+    username: String,
     getRegistrationOptionsJsonResult: Result<String>?,
     isGettingRegistrationOptionsJson: Boolean,
     createPasskeyResult: Result<String>?,
     isCreatingPasskey: Boolean,
+    sendRegistrationResponseToServerResult: Result<Unit>?,
+    isSendingRegistrationResponseToServer: Boolean,
     getRegistrationOptionsJson: () -> Unit,
     createPasskey: () -> Unit,
-    sendPasskeyDetailsToServer: () -> Unit
+    sendRegistrationResponseToServer: () -> Unit
 ) {
-    Column(modifier = modifier) {
+    val scrollState = rememberScrollState()
+
+    LaunchedEffect(
+        getRegistrationOptionsJsonResult?.isSuccess,
+        createPasskeyResult?.isSuccess,
+        sendRegistrationResponseToServerResult?.isSuccess
+    ) {
+        scrollState.animateScrollTo(Int.MAX_VALUE)
+    }
+
+    Column(modifier = modifier.verticalScroll(scrollState)) {
         SignUpGetRegisterRequestStage(
             getRegistrationOptionsJsonResult = getRegistrationOptionsJsonResult,
             isGettingRegistrationOptionsJson = isGettingRegistrationOptionsJson,
@@ -76,9 +96,17 @@ fun SignUpFlow(
         if (createPasskeyResult?.isSuccess == true) {
             Spacer(Modifier.height(20.dp))
 
-            SignUpSendPasskeyDetailsToServerStage(
-                sendPasskeyDetailsToServer = sendPasskeyDetailsToServer
+            SignUpSendRegistrationResponseToServerStage(
+                sendRegistrationResponseToServerResult = sendRegistrationResponseToServerResult,
+                isSendingRegistrationResponseToServer = isSendingRegistrationResponseToServer,
+                sendRegistrationResponseToServer = sendRegistrationResponseToServer
             )
+        }
+
+        if (sendRegistrationResponseToServerResult?.isSuccess == true) {
+            Spacer(Modifier.height(20.dp))
+
+            SignUpSuccessStage(username = username)
         }
     }
 }
@@ -167,26 +195,79 @@ fun SignUpCreatePasskeyStage(
 }
 
 @Composable
-fun SignUpSendPasskeyDetailsToServerStage(
-    sendPasskeyDetailsToServer: () -> Unit
+fun SignUpSendRegistrationResponseToServerStage(
+    sendRegistrationResponseToServerResult: Result<Unit>?,
+    isSendingRegistrationResponseToServer: Boolean,
+    sendRegistrationResponseToServer: () -> Unit
 )  {
-    Button(onClick = sendPasskeyDetailsToServer) {
-        Text("Send Passkey Details To Server")
+    Column {
+        Row(
+            modifier = Modifier.height(IntrinsicSize.Max),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = sendRegistrationResponseToServer,
+                enabled = !isSendingRegistrationResponseToServer
+            ) {
+                Text("Send Passkey Details To Server")
+            }
+
+            if (isSendingRegistrationResponseToServer) {
+                CircularProgressIndicator(
+                    modifier = Modifier.fillMaxHeight()
+                )
+            }
+        }
+
+        sendRegistrationResponseToServerResult?.exceptionOrNull()?.let { exception ->
+            Text("Error sending registration response to server: ${exception.message}")
+        }
+    }
+}
+
+@Composable
+fun SignUpSuccessStage(
+    username: String
+) {
+    Text("Woohoo!", style = MaterialTheme.typography.displayLarge)
+    Text("You have successfully signed up as $username")
+}
+
+@Preview
+@Composable
+fun SignUpFlow_Preview_ErrorAtSend() {
+    PasskeyAuthDemoAndroidTheme {
+        SignUpFlow(
+            username = "abc123",
+            getRegistrationOptionsJsonResult = Result.success("Booo\nBoo\nBoo\nBoo"),
+            isGettingRegistrationOptionsJson = false,
+            createPasskeyResult = Result.success("{ }"),
+            isCreatingPasskey = false,
+            sendRegistrationResponseToServerResult = Result.failure(Exception("No server")),
+            isSendingRegistrationResponseToServer = false,
+            getRegistrationOptionsJson = { },
+            createPasskey = { },
+            sendRegistrationResponseToServer = { },
+        )
     }
 }
 
 @Preview
 @Composable
-fun SignUpFlow_Preview() {
+fun SignUpFlow_Preview_Success() {
     PasskeyAuthDemoAndroidTheme {
         SignUpFlow(
+            username = "abc123",
             getRegistrationOptionsJsonResult = Result.success("Booo\nBoo\nBoo\nBoo"),
             isGettingRegistrationOptionsJson = false,
             createPasskeyResult = Result.success("{ }"),
             isCreatingPasskey = false,
+            sendRegistrationResponseToServerResult = Result.success(Unit),
+            isSendingRegistrationResponseToServer = false,
             getRegistrationOptionsJson = { },
             createPasskey = { },
-            sendPasskeyDetailsToServer = { }
+            sendRegistrationResponseToServer = { },
         )
     }
 }
