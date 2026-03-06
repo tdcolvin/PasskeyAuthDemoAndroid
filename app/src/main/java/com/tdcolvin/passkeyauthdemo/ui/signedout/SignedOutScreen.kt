@@ -17,19 +17,22 @@ import androidx.compose.ui.unit.dp
 fun SignedOutScreen(
     modifier: Modifier = Modifier,
     username: String,
-    navigateToSignUp: () -> Unit
+    navigateToSignUp: () -> Unit,
+    navigateToSignIn: () -> Unit
 ) {
     SignedOutScreenContent(
         modifier = modifier,
         username = username,
-        navigateToSignUp = navigateToSignUp
+        navigateToSignUp = navigateToSignUp,
+        navigateToSignIn = navigateToSignIn
     )
 }
 @Composable
 fun SignedOutScreenContent(
     modifier: Modifier = Modifier,
     username: String,
-    navigateToSignUp: () -> Unit
+    navigateToSignUp: () -> Unit,
+    navigateToSignIn: () -> Unit
 ) {
     Column(
         modifier = modifier,
@@ -55,6 +58,14 @@ fun SignedOutScreenContent(
             onClick = navigateToSignUp
         ) {
             Text("Sign up (=register) with Passkey")
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        Button(
+            onClick = navigateToSignIn
+        ) {
+            Text("Sign in (=authenticate) with Passkey")
         }
     }
 }
