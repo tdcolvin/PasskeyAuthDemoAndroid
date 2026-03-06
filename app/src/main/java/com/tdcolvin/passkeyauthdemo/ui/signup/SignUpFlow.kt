@@ -19,6 +19,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tdcolvin.passkeyauthdemo.ui.theme.PasskeyAuthDemoAndroidTheme
+import com.tdcolvin.passkeyauthdemo.util.prettyPrintJson
 
 @Composable
 fun SignUpScreen(
@@ -117,6 +119,10 @@ fun SignUpGetRegisterRequestStage(
     isGettingRegistrationOptionsJson: Boolean,
     getRegistrationOptionsJson: () -> Unit
 ) {
+    val registrationOptionsPrettyJson = remember(getRegistrationOptionsJsonResult) {
+        getRegistrationOptionsJsonResult?.getOrNull()?.prettyPrintJson()
+    }
+
     Column {
         Row(
             modifier = Modifier.height(IntrinsicSize.Max),
@@ -139,13 +145,13 @@ fun SignUpGetRegisterRequestStage(
 
         Spacer(Modifier.height(10.dp))
 
-        getRegistrationOptionsJsonResult?.getOrNull()?.let { registrationOptionsJson ->
+        if (registrationOptionsPrettyJson != null) {
             Text("Registration options from server:")
             TextField(
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 5,
                 textStyle = TextStyle(fontFamily = FontFamily.Monospace),
-                value = registrationOptionsJson,
+                value = registrationOptionsPrettyJson,
                 onValueChange = { }
             )
         }
@@ -158,6 +164,10 @@ fun SignUpCreatePasskeyStage(
     isCreatingPasskey: Boolean,
     createPasskey: () -> Unit
 ) {
+    val passkeyDetailsPrettyJson = remember(createPasskeyResult) {
+        createPasskeyResult?.getOrNull()?.prettyPrintJson()
+    }
+
     Column {
         Row(
             modifier = Modifier.height(IntrinsicSize.Max),
@@ -181,13 +191,13 @@ fun SignUpCreatePasskeyStage(
 
     Spacer(Modifier.height(10.dp))
 
-    createPasskeyResult?.getOrNull()?.let { passkeyDetailsJson ->
+    if (passkeyDetailsPrettyJson != null) {
         Text("Passkey details to send to server:")
         TextField(
             modifier = Modifier.fillMaxWidth(),
             minLines = 5,
             textStyle = TextStyle(fontFamily = FontFamily.Monospace),
-            value = passkeyDetailsJson,
+            value = passkeyDetailsPrettyJson,
             readOnly = true,
             onValueChange = { }
         )
